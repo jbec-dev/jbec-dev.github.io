@@ -1,13 +1,12 @@
 // ===============================
-// Web Bluetooth Connection
+// Web Bluetooth Connection (Fixed)
 // ===============================
 
+// Only define characteristic once
 var characteristic = null;
 
-const color_service_uuid =
-  "f815e810-456c-6761-746f-4d756e696368";
-const color_characteristic_uuid =
-  "f815e811-456c-6761-746f-4d756e696368";
+const color_service_uuid = "f815e810-456c-6761-746f-4d756e696368";
+const color_characteristic_uuid = "f815e811-456c-6761-746f-4d756e696368";
 
 async function findLamp() {
   try {
@@ -17,51 +16,62 @@ async function findLamp() {
     }
 
     console.log("Searching for Avea device...");
-  try {
-    console.log("Searching for Avea device...");
 
+    // Use a more lenient filter to avoid missing devices
     const options = {
-      filters: [
-        {
-          namePrefix: "Avea",
-          services: [color_service_uuid]
-        }
-      ]
+      acceptAllDevices: true,
+      optionalServices: [color_service_uuid]
     };
 
     const device = await navigator.bluetooth.requestDevice(options);
+
     const server = await device.gatt.connect();
+
     const service = await server.getPrimaryService(color_service_uuid);
+
     characteristic = await service.getCharacteristic(color_characteristic_uuid);
 
     console.log("Connected to Avea lamp");
 
-    subscribeToBulbNotifications();
+    // Subscribe to notifications from avea.js
+    if (typeof subscribeToBulbNotifications === "function") {
+      subscribeToBulbNotifications();
+    }
 
-    // UI Updates
+    // Update UI
     const button = document.getElementById("connectbutton");
-    button.innerText = "Verbunden ✓";
-    button.disabled = true;
+    if (button) {
+      button.innerText = "Verbunden ✓";
+      button.disabled = true;
+    }
 
     const status = document.getElementById("connectionStatus");
-    status.innerText = "Verbunden";
-    status.classList.remove("Disconnected");
-    status.classList.add("connected");
+    if (status) {
+      status.innerText = "Verbunden";
+      status.classList.remove("disconnected");
+      status.classList.add("connected");
+    }
 
     await sleep(500);
-    await setBrightnessSliderValue();
+    if (typeof setBrightnessSliderValue === "function") {
+      await setBrightnessSliderValue();
+    }
 
     // Handle disconnect
     device.addEventListener("gattserverdisconnected", () => {
       console.log("Device disconnected");
       characteristic = null;
 
-      button.innerText = "Reconnect";
-      button.disabled = false;
+      if (button) {
+        button.innerText = "Reconnect";
+        button.disabled = false;
+      }
 
-      status.innerText = "Disconnected";
-      status.classList.remove("connected");
-      status.classList.add("disconnected");
+      if (status) {
+        status.innerText = "Disconnected";
+        status.classList.remove("connected");
+        status.classList.add("disconnected");
+      }
     });
 
   } catch (error) {
@@ -70,9 +80,10 @@ async function findLamp() {
   }
 }
 
+// Write data to characteristic safely
 function writeCharacteristic(value) {
   if (!characteristic) {
-    console.warn("No characteristic available");
+    console.warn("No characteristic available to write");
     return;
   }
 
@@ -82,4 +93,3 @@ function writeCharacteristic(value) {
     console.error("Write failed:", error);
   }
 }
-
