@@ -41,13 +41,13 @@ async function findLamp() {
     // Update UI
     const button = document.getElementById("connectbutton");
     if (button) {
-      button.innerText = "Verbunden ✓";
+      button.innerText = "Connected ✓";
       button.disabled = true;
     }
 
     const status = document.getElementById("connectionStatus");
     if (status) {
-      status.innerText = "Verbunden";
+      status.innerText = "Connected";
       status.classList.remove("disconnected");
       status.classList.add("connected");
     }
