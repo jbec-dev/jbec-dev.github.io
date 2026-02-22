@@ -1,3 +1,2 @@
 Projects:
-
-AveaModern: > https://jbec-dev.github.io/aveaModern/
+- [aveaModern](https://jbec-dev.github.io/aveaModern/)
