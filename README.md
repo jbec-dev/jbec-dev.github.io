@@ -1,1 +1,1 @@
-Simple Replacement for the sadly discontinued Elgato Avea App.
+GitHub Pages Filea for jbec-dev.
