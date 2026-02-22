@@ -9,7 +9,7 @@
   <script src="wbt.js" defer></script>
 
   <link rel="stylesheet" href="avea.css" />
-  <title>Elgato Avea Steuerung</title>
+  <title>Elgato Avea Controls</title>
 </head>
 
 <body>
@@ -17,19 +17,19 @@
 
     <header class="card header">
       <h1>Elgato Avea</h1>
-      <p class="subtitle">Ersatz für die Originale App</p>
+      <p class="subtitle">Replacement for the original App</p>
 
       <button id="connectbutton" class="btn primary" onclick="findLamp()">
-        Lampe Verbinden
+        Connect
       </button>
 
       <div id="connectionStatus" class="status disconnected">
-        Nicht Verbunden
+        Disconnected
       </div>
     </header>
 
     <section class="card">
-      <h2>Helligkeit</h2>
+      <h2>Brightness</h2>
 
       <div class="slider-wrapper">
         <input id="brightnesSlider" type="range" min="1" max="100" value="100"
@@ -40,20 +40,20 @@
       </div>
 
       <button class="btn secondary" onclick="setBrightnessFromSlider()">
-        Anwenden
+        Apply
       </button>
     </section>
 
     <section class="card">
-      <h2>Farbe</h2>
+      <h2>Color</h2>
 
       <div class="color-row">
         <input type="color" id="staticColor" value="#00ffff">
         <button id="setStaticColor" class="btn accent" onclick="setStaticColor()">
-          Anwenden
+          Apply
         </button>
         <button class="btn danger" onclick="setOff()">
-          Ausschalten
+          Off
         </button>
       </div>
     </section>
