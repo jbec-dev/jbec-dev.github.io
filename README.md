@@ -1,1 +1,1 @@
-GitHub Pages Filea for jbec-dev.
+GitHub Pages Files for jbec-dev.
