@@ -45,45 +45,24 @@ background:rgba(255,255,255,0.1);
 color:white;
 }
 .hidden{display:none}
-.nav{
-display:flex;
-gap:20px;
-margin-bottom:20px;
-}
-.nav button{
-background:rgba(255,255,255,0.15);
-}
-.active-tab{
-background:linear-gradient(45deg,#ff512f,#dd2476)!important;
-}
+.nav{display:flex;gap:20px;margin-bottom:20px}
+.nav button{background:rgba(255,255,255,0.15)}
+.active-tab{background:linear-gradient(45deg,#ff512f,#dd2476)!important}
 .settings-btn{
-position:fixed;
-bottom:30px;
-right:30px;
-width:60px;height:60px;
-border-radius:50%;
-display:flex;
-align-items:center;
-justify-content:center;
+position:fixed;bottom:30px;right:30px;
+width:60px;height:60px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;
 background:linear-gradient(45deg,#ff512f,#dd2476);
-cursor:pointer;
-font-size:22px;
+cursor:pointer;font-size:22px;
 }
 .modal{
-position:fixed;
-inset:0;
+position:fixed;inset:0;
 background:rgba(0,0,0,0.7);
-display:none;
-align-items:center;
-justify-content:center;
+display:none;align-items:center;justify-content:center;
 }
 .modal-content{
-background:#1f2933;
-padding:30px;
-border-radius:20px;
-width:600px;
-max-height:90vh;
-overflow:auto;
+background:#1f2933;padding:30px;border-radius:20px;
+width:500px;max-height:90vh;overflow:auto;
 }
 table{width:100%;border-collapse:collapse}
 th,td{padding:10px}
@@ -114,22 +93,19 @@ tr:nth-child(even){background:rgba(255,255,255,0.05)}
 
 <!-- DASHBOARD -->
 <div id="dashboardTab">
-
 <div class="card">
 <canvas id="scoreChart"></canvas>
 </div>
-
 <div class="card">
-<h3>📜 Match History</h3>
+<h3>Match History</h3>
 <table id="gamesTable"></table>
 </div>
-
 </div>
 
-<!-- REGISTER TAB -->
+<!-- REGISTER -->
 <div id="registerTab" class="hidden">
 <div class="card">
-<h3>🎮 Register Game</h3>
+<h3>Register Game</h3>
 
 <label>Index</label>
 <select id="gameIndex">
@@ -152,13 +128,29 @@ tr:nth-child(even){background:rgba(255,255,255,0.05)}
 <input type="number" id="redScore" placeholder="Red Score">
 <input type="number" id="blueScore" placeholder="Blue Score">
 
-<button onclick="registerGame()">Register</button>
+<button onclick="registerGame()">Register Game</button>
 </div>
 </div>
 
 <button onclick="logout()">Logout</button>
-<div id="settingsBtn" class="settings-btn hidden">⚙</div>
+<div id="settingsBtn" class="settings-btn hidden" onclick="openSettings()">⚙</div>
+</div>
 
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modal">
+<div class="modal-content">
+<h2>Admin Panel</h2>
+
+<h3>Delete User</h3>
+<select id="deleteUserSelect"></select>
+<button onclick="deleteUser()">Delete</button>
+
+<h3>Force Logout All</h3>
+<button onclick="logoutAll()">Logout Everyone</button>
+
+<br><br>
+<button onclick="closeSettings()">Close</button>
+</div>
 </div>
 
 <script>
@@ -188,13 +180,17 @@ if(users[u] && users[u].password===p){
 currentUser=u;
 loginPage.classList.add("hidden");
 mainPage.classList.remove("hidden");
-if(u==="admin") settingsBtn.classList.remove("hidden");
+if(u==="admin"){
+settingsBtn.classList.remove("hidden");
+loadUserManagement();
+}
 loadDropdowns();
 renderAll();
 }else alert("Invalid login");
 }
 
 function logout(){location.reload()}
+function logoutAll(){localStorage.clear();location.reload()}
 
 function showTab(tab){
 dashboardTab.classList.toggle("hidden",tab!=="dashboard");
@@ -205,34 +201,47 @@ tabRegister.classList.toggle("active-tab",tab==="register");
 
 function loadDropdowns(){
 const users=JSON.parse(localStorage.users);
-[p1,p2,p3,p4].forEach(s=>s.innerHTML="");
-for(let u in users){
 [p1,p2,p3,p4].forEach(s=>{
+s.innerHTML="";
+let none=document.createElement("option");
+none.value="";
+none.text="None";
+s.appendChild(none);
+for(let u in users){
 let o=document.createElement("option");
 o.value=u;o.text=u;
-s.appendChild(o.cloneNode(true));
+s.appendChild(o);
+}
 });
+}
+
+function loadUserManagement(){
+const users=JSON.parse(localStorage.users);
+deleteUserSelect.innerHTML="";
+for(let u in users){
+if(u!=="admin"){
+let o=document.createElement("option");
+o.value=u;o.text=u;
+deleteUserSelect.appendChild(o);
+}
 }
 }
 
 function registerGame(){
-const games=JSON.parse(localStorage.games);
-const id=Date.now();
-const red=+redScore.value;
-const blue=+blueScore.value;
-const diff=Math.abs(red-blue)*10;
+const red=Number(redScore.value);
+const blue=Number(blueScore.value);
+if(isNaN(red)||isNaN(blue)){alert("Enter valid scores");return;}
 
+let games=JSON.parse(localStorage.games);
 games.push({
-id,
+id:Date.now(),
 date:new Date().toISOString().split("T")[0],
-index:gameIndex.value,
-redPlayers:[p1.value,p3.value],
-bluePlayers:[p2.value,p4.value],
+redPlayers:[p1.value,p3.value].filter(x=>x),
+bluePlayers:[p2.value,p4.value].filter(x=>x),
 redScore:red,
 blueScore:blue,
-points:diff
+points:Math.abs(red-blue)*10
 });
-
 localStorage.games=JSON.stringify(games);
 renderAll();
 alert("Game registered!");
@@ -246,43 +255,36 @@ localStorage.games=JSON.stringify(games);
 renderAll();
 }
 
+function deleteUser(){
+let users=JSON.parse(localStorage.users);
+delete users[deleteUserSelect.value];
+localStorage.users=JSON.stringify(users);
+loadUserManagement();
+loadDropdowns();
+}
+
 function calculateScores(){
 const users=JSON.parse(localStorage.users);
 const games=JSON.parse(localStorage.games);
 let scores={};
 for(let u in users) scores[u]=0;
-
 games.forEach(g=>{
 const winners=g.redScore>g.blueScore?g.redPlayers:g.bluePlayers;
 const losers=g.redScore>g.blueScore?g.bluePlayers:g.redPlayers;
-
-winners.forEach(p=>{if(p) scores[p]+=g.points});
-losers.forEach(p=>{if(p) scores[p]-=g.points});
+winners.forEach(p=>scores[p]+=g.points);
+losers.forEach(p=>scores[p]-=g.points);
 });
 return scores;
 }
 
 function renderChart(){
-const games=JSON.parse(localStorage.games);
-const users=JSON.parse(localStorage.users);
-let labels=[...new Set(games.map(g=>g.date))];
-let datasets=[];
-for(let u in users){
-let total=0;
-let data=[];
-games.forEach(g=>{
-const winners=g.redScore>g.blueScore?g.redPlayers:g.bluePlayers;
-const losers=g.redScore>g.blueScore?g.bluePlayers:g.redPlayers;
-if(winners.includes(u)) total+=g.points;
-if(losers.includes(u)) total-=g.points;
-data.push(total);
-});
-datasets.push({label:u,data,tension:.4});
-}
+const scores=calculateScores();
+const labels=Object.keys(scores);
+const data=Object.values(scores);
 if(chart) chart.destroy();
 chart=new Chart(scoreChart,{
-type:"line",
-data:{labels,datasets},
+type:"bar",
+data:{labels,datasets:[{label:"Total Score",data}]},
 options:{
 plugins:{legend:{labels:{color:"white"}}},
 scales:{x:{ticks:{color:"white"}},y:{ticks:{color:"white"}}}
@@ -292,10 +294,9 @@ scales:{x:{ticks:{color:"white"}},y:{ticks:{color:"white"}}}
 
 function renderGames(){
 const games=JSON.parse(localStorage.games);
-let html="<tr><th>Date</th><th>Game</th><th>Score</th>";
+let html="<tr><th>Date</th><th>Match</th><th>Score</th>";
 if(currentUser==="admin") html+="<th>Delete</th>";
 html+="</tr>";
-
 games.slice().reverse().forEach(g=>{
 html+="<tr>";
 html+=`<td>${g.date}</td>`;
@@ -312,7 +313,9 @@ function renderAll(){
 renderChart();
 renderGames();
 }
-</script>
 
+function openSettings(){settingsModal.style.display="flex"}
+function closeSettings(){settingsModal.style.display="none"}
+</script>
 </body>
 </html>
