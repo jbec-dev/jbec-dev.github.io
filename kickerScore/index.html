@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Scoreboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body {
+    font-family: Arial;
+    margin:0;
+    background:#111;
+    color:white;
+}
+h2 { margin-top:0 }
+
+.container { padding:20px }
+
+input, select {
+    padding:8px;
+    margin:5px 0;
+    width:100%;
+}
+
+button {
+    padding:8px 12px;
+    background:#444;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
+button:hover { background:#666 }
+
+.login-box {
+    max-width:400px;
+    margin:100px auto;
+    background:#222;
+    padding:20px;
+    border-radius:10px;
+}
+
+.hidden { display:none }
+
+.red { color:#ff4c4c }
+.blue { color:#4ca3ff }
+
+table {
+    width:100%;
+    border-collapse:collapse;
+}
+td, th {
+    padding:8px;
+    border-bottom:1px solid #333;
+}
+
+.settings-btn {
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    background:#333;
+    width:50px;
+    height:50px;
+    border-radius:50%;
+    font-size:20px;
+}
+
+.modal {
+    position:fixed;
+    top:0;left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.8);
+    display:none;
+    overflow:auto;
+}
+.modal-content {
+    background:#222;
+    padding:20px;
+    margin:50px auto;
+    max-width:500px;
+    border-radius:10px;
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage" class="login-box">
+    <h2>Login</h2>
+    <input id="username" placeholder="Username">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- MAIN -->
+<div id="mainPage" class="hidden container">
+
+    <h2>Scoreboard</h2>
+    <canvas id="scoreChart"></canvas>
+
+    <h3>Register Game</h3>
+
+    <label>Index (1 or 2)</label>
+    <select id="gameIndex">
+        <option value="1">1</option>
+        <option value="2">2</option>
+    </select>
+
+    <label>Player 1 (Red)</label>
+    <select id="p1"></select>
+
+    <label>Player 2 (Blue)</label>
+    <select id="p2"></select>
+
+    <label>Optional Player 3 (Red)</label>
+    <select id="p3"></select>
+
+    <label>Optional Player 4 (Blue)</label>
+    <select id="p4"></select>
+
+    <label>Red Score</label>
+    <input type="number" id="redScore">
+
+    <label>Blue Score</label>
+    <input type="number" id="blueScore">
+
+    <button onclick="registerGame()">Register Game</button>
+
+    <h3>Last 3 Days History</h3>
+    <table id="historyTable"></table>
+
+    <button onclick="logout()">Logout</button>
+
+    <button id="settingsBtn" class="settings-btn hidden" onclick="openSettings()">⚙</button>
+
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modal">
+<div class="modal-content">
+<h2>User Management</h2>
+
+<h3>Create User</h3>
+<input id="newUser" placeholder="Username">
+<input id="newPass" placeholder="Password">
+<button onclick="createUser()">Create</button>
+
+<h3>Change Password</h3>
+<select id="changeUser"></select>
+<input id="changePass" placeholder="New Password">
+<button onclick="changePassword()">Change</button>
+
+<h3>Rename User</h3>
+<select id="renameUser"></select>
+<input id="renameName" placeholder="New Name">
+<button onclick="renameUser()">Rename</button>
+
+<h3>Delete User</h3>
+<select id="deleteUser"></select>
+<button onclick="deleteUser()">Delete</button>
+
+<h3>Force Logout All</h3>
+<button onclick="logoutAll()">Logout Everyone</button>
+
+<button onclick="closeSettings()">Close</button>
+</div>
+</div>
+
+<script>
+
+let currentUser = null;
+let chart;
+
+function init() {
+    if(!localStorage.users){
+        createDefaultAdmin();
+    }
+}
+
+async function hash(text){
+    const msgUint8 = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function createDefaultAdmin(){
+    const h = await hash("admin");
+    localStorage.users = JSON.stringify({
+        admin:{password:h,scoreHistory:[]}
+    });
+}
+
+async function login(){
+    const u = username.value;
+    const p = password.value;
+    const users = JSON.parse(localStorage.users);
+    const h = await hash(p);
+
+    if(users[u] && users[u].password === h){
+        currentUser = u;
+        showMain();
+    } else {
+        alert("Invalid login");
+    }
+}
+
+function logout(){
+    location.reload();
+}
+
+function logoutAll(){
+    localStorage.clear();
+    location.reload();
+}
+
+function showMain(){
+    loginPage.classList.add("hidden");
+    mainPage.classList.remove("hidden");
+    if(currentUser === "admin"){
+        settingsBtn.classList.remove("hidden");
+    }
+    loadUsersDropdowns();
+    drawChart();
+    loadHistory();
+}
+
+function loadUsersDropdowns(){
+    const users = JSON.parse(localStorage.users);
+    const selects = [p1,p2,p3,p4,changeUser,deleteUser,renameUser];
+    selects.forEach(s=>s.innerHTML="");
+    for(let u in users){
+        selects.forEach(s=>{
+            let opt=document.createElement("option");
+            opt.value=u; opt.text=u;
+            s.appendChild(opt.cloneNode(true));
+        });
+    }
+}
+
+function registerGame(){
+    const users = JSON.parse(localStorage.users);
+    const red = redScore.value;
+    const blue = blueScore.value;
+    const date = new Date().toISOString().split("T")[0];
+
+    const diff = Math.abs(red-blue)*10;
+
+    const redPlayers=[p1.value,p3.value];
+    const bluePlayers=[p2.value,p4.value];
+
+    const winners = red>blue ? redPlayers : bluePlayers;
+    const losers = red>blue ? bluePlayers : redPlayers;
+
+    winners.forEach(p=>{
+        if(p && users[p]){
+            users[p].scoreHistory.push({date,score:diff});
+        }
+    });
+
+    losers.forEach(p=>{
+        if(p && users[p]){
+            users[p].scoreHistory.push({date,score:-diff});
+        }
+    });
+
+    localStorage.users=JSON.stringify(users);
+    drawChart();
+    loadHistory();
+}
+
+function drawChart(){
+    const users = JSON.parse(localStorage.users);
+    const labels = [];
+    const datasets=[];
+
+    for(let u in users){
+        let total=0;
+        const data=[];
+        users[u].scoreHistory.forEach(e=>{
+            total+=e.score;
+            labels.push(e.date);
+            data.push(total);
+        });
+
+        datasets.push({
+            label:u,
+            data:data,
+            fill:false
+        });
+    }
+
+    if(chart) chart.destroy();
+    chart = new Chart(scoreChart,{
+        type:"line",
+        data:{labels:[...new Set(labels)],datasets}
+    });
+}
+
+function loadHistory(){
+    const users = JSON.parse(localStorage.users);
+    let html="<tr><th>Name</th><th>Score</th></tr>";
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate()-3);
+
+    for(let u in users){
+        let total=0;
+        users[u].scoreHistory.forEach(e=>{
+            if(new Date(e.date)>=cutoff){
+                total+=e.score;
+            }
+        });
+        html+=`<tr><td>${u}</td><td>${total}</td></tr>`;
+    }
+    historyTable.innerHTML=html;
+}
+
+async function createUser(){
+    const users = JSON.parse(localStorage.users);
+    const u = newUser.value;
+    const p = await hash(newPass.value);
+    users[u]={password:p,scoreHistory:[]};
+    localStorage.users=JSON.stringify(users);
+    loadUsersDropdowns();
+}
+
+async function changePassword(){
+    const users = JSON.parse(localStorage.users);
+    users[changeUser.value].password=await hash(changePass.value);
+    localStorage.users=JSON.stringify(users);
+}
+
+function deleteUser(){
+    const users = JSON.parse(localStorage.users);
+    delete users[deleteUser.value];
+    localStorage.users=JSON.stringify(users);
+    loadUsersDropdowns();
+}
+
+function renameUser(){
+    const users = JSON.parse(localStorage.users);
+    const old=renameUser.value;
+    const newN=renameName.value;
+    users[newN]=users[old];
+    delete users[old];
+    localStorage.users=JSON.stringify(users);
+    loadUsersDropdowns();
+}
+
+function openSettings(){
+    settingsModal.style.display="block";
+}
+
+function closeSettings(){
+    settingsModal.style.display="none";
+}
+
+init();
+</script>
+</body>
+</html>
