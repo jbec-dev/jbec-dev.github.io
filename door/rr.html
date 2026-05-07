@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title></title>
+
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: black;
+    cursor: pointer;
+  }
+
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #222;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+  }
+
+  video {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="overlay">click anywhere</div>
+
+<video id="rick" loop playsinline>
+  <source src="https://jbec-dev.github.io/rickroll/rickroll.mp4" type="video/mp4">
+</video>
+
+<script>
+const overlay = document.getElementById("overlay");
+const video = document.getElementById("rick");
+
+function start() {
+  overlay.style.display = "none";
+  video.style.display = "block";
+
+  video.play().catch(err => {
+    console.log("Play failed:", err);
+    video.controls = true;
+  });
+}
+
+// attach to BOTH body and overlay for reliability
+overlay.addEventListener("click", start);
+document.body.addEventListener("click", start, { once: true });
+</script>
+
+</body>
+</html>
