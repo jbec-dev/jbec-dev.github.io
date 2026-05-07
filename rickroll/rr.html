@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Door Access System</title>
+
+<style>
+  body {
+    margin: 0;
+    background: black;
+    color: white;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .panel {
+    text-align: center;
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 60px;
+    height: 60px;
+    border: 6px solid #333;
+    border-top: 6px solid #00ffcc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  #status {
+    margin-top: 10px;
+    font-size: 16px;
+    opacity: 0.8;
+  }
+
+  #unlockBtn {
+    display: none;
+    margin-top: 20px;
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    background: #00ffcc;
+    color: black;
+    border-radius: 6px;
+  }
+
+  video {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="ui" class="panel">
+  <div class="spinner"></div>
+  <div id="status">Connecting to door system...</div>
+  <button id="unlockBtn">Unlock Door</button>
+</div>
+
+<video id="rick" playsinline>
+  <source src="https://jbec-dev.github.io/rickroll/rickroll.mp4" type="video/mp4">
+</video>
+
+<script>
+const statusText = document.getElementById("status");
+const unlockBtn = document.getElementById("unlockBtn");
+const ui = document.getElementById("ui");
+const video = document.getElementById("rick");
+
+// fake loading steps
+const steps = [
+  "Connecting to door system...",
+  "Verifying credentials...",
+  "Decrypting access token...",
+  "Access level: ACCEPTED"
+];
+
+let i = 0;
+
+function runSteps() {
+  if (i < steps.length) {
+    statusText.textContent = steps[i];
+    i++;
+    setTimeout(runSteps, 900);
+  } else {
+    document.querySelector(".spinner").style.display = "none";
+    unlockBtn.style.display = "inline-block";
+    statusText.textContent = "Door ready to unlock";
+  }
+}
+
+runSteps();
+
+unlockBtn.onclick = async () => {
+  ui.style.display = "none";
+  video.style.display = "block";
+
+  try {
+    await video.play(); // starts after click (allowed with sound)
+  } catch (e) {
+    video.controls = true;
+  }
+};
+</script>
+
+</body>
+</html>
